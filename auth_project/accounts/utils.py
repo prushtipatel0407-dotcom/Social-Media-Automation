@@ -1,18 +1,39 @@
-# accounts/utils.py
 import random
-from django.core.mail import send_mail
-from django.conf import settings
+import hashlib
+from django.core import signing
+from django.utils import timezone
+from datetime import timedelta
+
+OTP_EXPIRY_MINUTES = 5
+
 
 def generate_otp():
-    return str(random.randint(100000, 999999))
+    return f"{random.randint(100000, 999999)}"
 
-def send_otp_email(email, otp):
-    subject = "Your OTP Code"
-    message = f"Your OTP is {otp}. It is valid for 5 minutes."
-    send_mail(
-        subject,
-        message,
-        settings.EMAIL_HOST_USER,
-        [email],
-        fail_silently=False,
-    )
+
+def create_otp_token(email, otp):
+    data = {
+        "email": email,
+        "otp_hash": hashlib.sha256(otp.encode()).hexdigest(),
+        "exp": (timezone.now() + timedelta(minutes=OTP_EXPIRY_MINUTES)).timestamp()
+    }
+    return signing.dumps(data)
+
+
+def verify_otp_token(token, email, otp):
+    try:
+        data = signing.loads(token)
+    except signing.BadSignature:
+        return False, "Invalid token"
+
+    if data["email"] != email:
+        return False, "Email mismatch"
+
+    if timezone.now().timestamp() > data["exp"]:
+        return False, "OTP expired"
+
+    otp_hash = hashlib.sha256(otp.encode()).hexdigest()
+    if otp_hash != data["otp_hash"]:
+        return False, "Invalid OTP"
+
+    return True, "OTP verified"

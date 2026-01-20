@@ -182,6 +182,21 @@ CACHES = {
         "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
     }
 }
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6379/1",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    }
+}
+REST_FRAMEWORK["DEFAULT_THROTTLE_CLASSES"] += [
+    "notifications.throttles.ApiKeyRateThrottle"
+]
+
+REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]["api_key"] = "100/min"
+
 
 CELERY_TASK_ALWAYS_EAGER = True
 CELERY_TASK_EAGER_PROPAGATES = True

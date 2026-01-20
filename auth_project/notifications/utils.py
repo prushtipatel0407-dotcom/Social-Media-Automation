@@ -1,12 +1,33 @@
-# utils.py
 import random
-from django.core.mail import send_mail
-from django.conf import settings
+import time
+
+OTP_STORE = {}
+OTP_EXPIRY_SECONDS = 300  # 5 minutes
+
 
 def generate_otp():
     return str(random.randint(100000, 999999))
 
-def send_otp_email(email, otp):
-    subject = "Your OTP Code"
-    message = f"Your OTP is {otp}. It is valid for 5 minutes."
-    send_mail(subject, message, settings.EMAIL_HOST_USER, [email], fail_silently=False)
+
+def store_otp(email, otp):
+    OTP_STORE[email] = {
+        "otp": otp,
+        "timestamp": time.time()
+    }
+
+
+def verify_otp(email, otp):
+    data = OTP_STORE.get(email)
+
+    if not data:
+        return False, "OTP not found"
+
+    if time.time() - data["timestamp"] > OTP_EXPIRY_SECONDS:
+        del OTP_STORE[email]
+        return False, "OTP expired"
+
+    if data["otp"] != otp:
+        return False, "Invalid OTP"
+
+    del OTP_STORE[email]
+    return True, "OTP verified"

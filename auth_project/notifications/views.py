@@ -1,55 +1,84 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
-from .tasks import send_email_task
-# views.py
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
-from django.core.cache import cache
-from .utils import generate_otp, send_otp_email
+from rest_framework.permissions import AllowAny
+from django.core.mail import send_mail
 
-@api_view(['POST'])
-def send_otp(request):
-    email = request.data.get('email')
-    if not email:
-        return Response({"error": "Email is required"}, status=400)
+from .utils import generate_otp, store_otp, verify_otp
+from .serializers import (
+    SendOTPSerializer,
+    VerifyOTPSerializer,
+    SendMultipleEmailSerializer,
+    VerifyMultipleOTPSerializer
+)
 
-    otp = generate_otp()
-    cache.set(email, otp, timeout=300)  # 5 min expiry
-    send_otp_email(email, otp)
 
-    return Response({"message": "OTP sent successfully"})
+class SendMultipleEmailAPIView(APIView):
+    permission_classes = [AllowAny]
 
-@api_view(['POST'])
-def verify_otp(request):
-    email = request.data.get('email')
-    user_otp = request.data.get('otp')
-
-    if not email or not user_otp:
-        return Response({"error": "Email and OTP required"}, status=400)
-
-    stored_otp = cache.get(email)
-    if stored_otp == user_otp:
-        cache.delete(email)  # OTP used once
-        return Response({"message": "OTP verified successfully"})
-    return Response({"error": "Invalid or expired OTP"}, status=400)
-
-class SendEmailView(APIView):
     def post(self, request):
-        to = request.data.get("to")
-        subject = request.data.get("subject")
-        message = request.data.get("message")
+        serializer = SendMultipleEmailSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
 
-        if not to or not subject or not message:
-            return Response(
-                {"error": "to, subject, message required"},
-                status=400
+        send_mail(
+            subject=serializer.validated_data["subject"],
+            message=serializer.validated_data["message"],
+            from_email=None,
+            recipient_list=serializer.validated_data["emails"],
+            fail_silently=False,
+        )
+
+        return Response({"message": "Emails sent successfully"})
+
+
+class SendOTPAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = SendOTPSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        emails = serializer.validated_data["emails"]
+        sent = []
+
+        for email in emails:
+            otp = generate_otp()
+            store_otp(email, otp)
+
+            send_mail(
+                subject="Your OTP Code",
+                message=f"Your OTP is {otp}. It expires in 5 minutes.",
+                from_email=None,
+                recipient_list=[email],
+                fail_silently=False,
             )
 
-        # 🔥 background task
-        send_email_task.delay(subject, message, to)
+            sent.append(email)
 
-        return Response(
-            {"status": "Email queued"},
-            status=status.HTTP_202_ACCEPTED
-        )
+        return Response({
+            "message": "OTP sent successfully",
+            "emails": sent
+        })
+
+
+class VerifyMultipleOTPAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = VerifyMultipleOTPSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        results = []
+
+        for item in serializer.validated_data["otps"]:
+            email = item["email"]
+            otp = item["otp"]
+
+            is_valid, message = verify_otp(email, otp)
+
+            results.append({
+                "email": email,
+                "status": "success" if is_valid else "failed",
+                "message": message
+            })
+
+        return Response({"results": results})

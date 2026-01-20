@@ -12,8 +12,6 @@ from .models import User
 # ----------------------------
 
 class RegisterSerializer(serializers.ModelSerializer):
-    id = serializers.IntegerField(read_only=True)
-
     password = serializers.CharField(
         write_only=True,
         min_length=8,
@@ -34,8 +32,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'password']
-
+        fields = ['id','username', 'email', 'password']
 
     # ✅ Normalize + validate username
     def validate_username(self, value):
@@ -103,11 +100,19 @@ class EmailUsernameTokenSerializer(TokenObtainPairSerializer):
         if not user:
             raise serializers.ValidationError("Invalid credentials")
 
+        # 🔹 Get default JWT tokens
         data = super().validate({
             "username": user.username,
             "password": password
         })
+
+        # 🔹 ADD USER DATA TO RESPONSE
+        data["id"] = user.id
+        data["username"] = user.username
+        data["email"] = user.email
+
         return data
+
 
 
 # ----------------------------
@@ -125,3 +130,16 @@ class RegisterView(generics.CreateAPIView):
     """
     serializer_class = RegisterSerializer
     permission_classes = [permissions.AllowAny]
+
+
+
+class SendOTPSerializer(serializers.Serializer):
+    emails = serializers.ListField(
+        child=serializers.EmailField(),
+        min_length=1
+    )
+
+
+class VerifyOTPSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    otp = serializers.CharField(max_length=6)

@@ -1,4 +1,5 @@
 # accounts/views.py
+
 from rest_framework import generics, permissions, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -6,38 +7,6 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
-# accounts/views.py
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
-from django.core.cache import cache
-from .utils import generate_otp, send_otp_email  # make sure utils.py exists
-
-@api_view(['POST'])
-def send_otp(request):
-    email = request.data.get('email')
-    if not email:
-        return Response({"error": "Email is required"}, status=400)
-
-    otp = generate_otp()
-    cache.set(email, otp, timeout=300)  # 5 min expiry
-    send_otp_email(email, otp)
-
-    return Response({"message": "OTP sent successfully"})
-
-
-@api_view(['POST'])
-def verify_otp(request):
-    email = request.data.get('email')
-    user_otp = request.data.get('otp')
-
-    if not email or not user_otp:
-        return Response({"error": "Email and OTP required"}, status=400)
-
-    stored_otp = cache.get(email)
-    if stored_otp == user_otp:
-        cache.delete(email)  # OTP used once
-        return Response({"message": "OTP verified successfully"})
-    return Response({"error": "Invalid or expired OTP"}, status=400)
 
 from .serializers import (
     RegisterSerializer,

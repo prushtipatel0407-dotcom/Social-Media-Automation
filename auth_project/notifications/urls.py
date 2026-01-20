@@ -1,11 +1,8 @@
-# notifications/urls.py
 from django.urls import path
-
-from accounts import views
-from .views import SendEmailView
+from .views import SendMultipleEmailAPIView, SendOTPAPIView, VerifyMultipleOTPAPIView
 
 urlpatterns = [
-    path("email/", SendEmailView.as_view()),
-     path('send-otp/', views.send_otp, name='send_otp'),
-    path('verify-otp/', views.verify_otp, name='verify_otp'),
+    path("send-otp/", SendOTPAPIView.as_view(), name="send-otp"),
+    path("otp/verify-multiple/", VerifyMultipleOTPAPIView.as_view(), name="verify-multiple-otp"),
+    path("send/", SendMultipleEmailAPIView.as_view(), name="send-multiple-email"),
 ]
