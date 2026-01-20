@@ -17,7 +17,7 @@ class UserAdmin(BaseUserAdmin):
         ('Permissions', {'fields': ('is_staff', 'is_superuser', 'is_active', 'groups', 'user_permissions')}),
     )
 
-    # Fields for creating new users
+    # Fields for creating new users     
     add_fieldsets = (
         (None, {
             'classes': ('wide',),

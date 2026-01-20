@@ -2,6 +2,10 @@ from django.contrib import admin
 from django.urls import path, include
 
 urlpatterns = [
-    path("admin/", admin.site.urls),
-     path('api/auth/', include('accounts.urls')), 
+    path('admin/', admin.site.urls),
+    path('api/auth/', include('accounts.urls')),
+    path('api/notifications/', include('notifications.urls')),
+    # project urls.py
+path('api/', include('notifications.urls')),
+
 ]
