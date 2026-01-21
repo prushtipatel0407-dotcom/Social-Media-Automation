@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from django.core.mail import send_mail
 
-from .utils import generate_otp, store_otp, verify_otp
+from .utils import generate_otp, store_otp, verify_otp, can_send_otp
 from .serializers import (
     SendOTPSerializer,
     VerifyOTPSerializer,
@@ -37,10 +37,17 @@ class SendOTPAPIView(APIView):
         serializer = SendOTPSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        emails = serializer.validated_data["emails"]
-        sent = []
+        results = []
 
-        for email in emails:
+        for email in serializer.validated_data["emails"]:
+            if not can_send_otp(email):
+                results.append({
+                    "email": email,
+                    "status": "blocked",
+                    "message": "Wait 1 minute before requesting OTP again"
+                })
+                continue
+
             otp = generate_otp()
             store_otp(email, otp)
 
@@ -52,12 +59,15 @@ class SendOTPAPIView(APIView):
                 fail_silently=False,
             )
 
-            sent.append(email)
+            results.append({
+                "email": email,
+                "status": "sent"
+            })
 
         return Response({
-            "message": "OTP sent successfully",
-            "emails": sent
+            "results": results
         })
+
 
 
 class VerifyMultipleOTPAPIView(APIView):
