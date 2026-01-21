@@ -1,145 +1,71 @@
-from rest_framework import serializers, generics, permissions
+from rest_framework import serializers
 from django.contrib.auth import authenticate
 from django.core.validators import RegexValidator
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from django.db.models import Q
-
 from .models import User
+from django.contrib.auth.password_validation import validate_password
 
-
-# ----------------------------
-# Serializers
-# ----------------------------
-
+# ---------------------------
+# Registration Serializer
+# ---------------------------
 class RegisterSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(
-        write_only=True,
-        min_length=8,
-        max_length=128,
-        validators=[
-            RegexValidator(
-                regex=r'^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@$!%*?&])',
-                message=(
-                    "Password must contain at least "
-                    "1 uppercase, 1 lowercase, 1 number, "
-                    "and 1 special character."
-                )
-            )
-        ]
+    password = serializers.CharField(write_only=True, min_length=8)
+    confirm_password = serializers.CharField(write_only=True, min_length=8)
+    phone_number = serializers.CharField(
+        validators=[RegexValidator(
+            regex=r'^\+?\d{10,15}$',
+            message="Phone number must be 10-15 digits, optionally starting with +"
+        )]
     )
-
-    email = serializers.EmailField(required=True)
 
     class Meta:
         model = User
-        fields = ['id','username', 'email', 'password']
+        fields = ['username', 'email', 'password', 'confirm_password','phone_number']
 
-    # ✅ Normalize + validate username
-    def validate_username(self, value):
-        value = value.strip()
-
-        if User.objects.filter(username__iexact=value).exists():
-            raise serializers.ValidationError("Username already exists")
-
+    def validate_email(self, value):
+        value = value.lower()
+        if User.objects.filter(email__iexact=value).exists():
+            raise serializers.ValidationError("Email already exists")
         return value
 
-    # ✅ Normalize + validate email (CASE-INSENSITIVE)
-    def validate_email(self, value):
-        email = value.strip().lower()
+    def validate_username(self, value):
+        if User.objects.filter(username__iexact=value).exists():
+            raise serializers.ValidationError("Username already exists")
+        return value
 
-        if User.objects.filter(email__iexact=email).exists():
-            raise serializers.ValidationError("Email already exists")
+    def validate(self, data):
+        if data['password'] != data['confirm_password']:
+            raise serializers.ValidationError({"password": "Passwords do not match"})
+        validate_password(data['password'])
+        return data
 
-        return email
-
-    # ✅ Ensure lowercase email is saved
     def create(self, validated_data):
-        validated_data['email'] = validated_data['email'].lower()
-
+        validated_data.pop('confirm_password')
         user = User.objects.create_user(
             username=validated_data['username'],
-            email=validated_data['email'],
-            password=validated_data['password']
+            email=validated_data['email'].lower(),
+            password=validated_data['password'],
+            phone_number=validated_data['phone_number'],
+            is_verified=False
         )
         return user
 
+# ---------------------------
+# Login Serializer
+# ---------------------------
+class LoginSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True)
 
-class UserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ['id', 'username', 'email']
-
-
-class EmailUsernameTokenSerializer(TokenObtainPairSerializer):
-    """
-    Login via username OR email (case-insensitive)
-    """
     def validate(self, attrs):
-        username_or_email = attrs.get("username").strip()
-        password = attrs.get("password")
-
-        # Try username first
-        user = authenticate(
-            request=self.context.get("request"),
-            username=username_or_email,
-            password=password
-        )
-
-        # Try email (case-insensitive)
-        if not user:
-            try:
-                user_obj = User.objects.get(email__iexact=username_or_email)
-                user = authenticate(
-                    request=self.context.get("request"),
-                    username=user_obj.username,
-                    password=password
-                )
-            except User.DoesNotExist:
-                pass
-
-        if not user:
+        email = attrs.get('email').lower()
+        password = attrs.get('password')
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
             raise serializers.ValidationError("Invalid credentials")
 
-        # 🔹 Get default JWT tokens
-        data = super().validate({
-            "username": user.username,
-            "password": password
-        })
+        if not user.check_password(password):
+            raise serializers.ValidationError("Invalid credentials")
 
-        # 🔹 ADD USER DATA TO RESPONSE
-        data["id"] = user.id
-        data["username"] = user.username
-        data["email"] = user.email
-
-        return data
-
-
-
-# ----------------------------
-# Register View
-# ----------------------------
-
-class RegisterView(generics.CreateAPIView):
-    """
-    User registration endpoint.
-
-    Validates:
-    - Case-insensitive unique username
-    - Case-insensitive unique email
-    - Strong password
-    """
-    serializer_class = RegisterSerializer
-    permission_classes = [permissions.AllowAny]
-
-
-
-class SendOTPSerializer(serializers.Serializer):
-    emails = serializers.ListField(
-        child=serializers.EmailField(),
-        min_length=1
-    )
-
-
-class VerifyOTPSerializer(serializers.Serializer):
-    email = serializers.EmailField()
-    otp = serializers.CharField(max_length=6)
+        attrs['user'] = user
+        return attrs

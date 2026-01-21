@@ -3,6 +3,37 @@ from django.core.cache import cache
 
 OTP_TTL = 300        # 5 minutes
 RATE_LIMIT_TTL = 60 # 1 minute
+from django.core.mail import send_mail
+from django.conf import settings
+
+def send_reset_email(user, token):
+    reset_link = (
+        "http://127.0.0.1:8000"
+        "/static/reset-password/reset-password.html"
+        f"?token={token}"
+    )
+
+    subject = "Reset Your Password"
+    message = f"""
+Hi {user.email},
+
+Click the link below to reset your password:
+
+{reset_link}
+
+This link is valid for 15 minutes.
+"""
+
+    send_mail(
+        subject,
+        message,
+        settings.EMAIL_HOST_USER,
+        [user.email],
+        fail_silently=False,
+    )
+
+    print("RESET LINK:", reset_link)
+
 
 def generate_otp():
     return str(random.randint(100000, 999999))

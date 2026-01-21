@@ -2,7 +2,11 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from django.core.mail import send_mail
-
+from django.contrib.auth import get_user_model
+from django.core.mail import send_mail
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import AllowAny
 from .utils import generate_otp, store_otp, verify_otp, can_send_otp
 from .serializers import (
     SendOTPSerializer,
@@ -11,6 +15,12 @@ from .serializers import (
     VerifyMultipleOTPSerializer
 )
 
+# Get the User model
+User = get_user_model()
+
+# ---------------------------
+# ✅ Send Multiple Email API View
+# ---------------------------
 
 class SendMultipleEmailAPIView(APIView):
     permission_classes = [AllowAny]

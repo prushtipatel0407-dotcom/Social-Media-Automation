@@ -1,29 +1,19 @@
 # accounts/models.py
-
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-
+from django.core.validators import RegexValidator
 
 class User(AbstractUser):
-    """
-    Custom User model.
-    Django automatically creates:
-    - id (BigAutoField)
-    - primary key
-    - unique constraint
-    """
-
-    # Explicit ID field (OPTIONAL but clear)
-    id = models.BigAutoField(primary_key=True)
-
-    email = models.EmailField(
-        unique=True,
-        null=False,
-        blank=False
+    email = models.EmailField(unique=True)
+    phone_number = models.CharField(
+        max_length=15,
+        unique=False,   # ❌ Ensure this is False
+        validators=[RegexValidator(
+            regex=r'^\+?\d{10,15}$',
+            message="Phone number must be 10-15 digits, optionally starting with +"
+        )]
     )
+    is_verified = models.BooleanField(default=False)
 
+    REQUIRED_FIELDS = ['email', 'phone_number']
     USERNAME_FIELD = 'username'
-    REQUIRED_FIELDS = ['email']
-
-    def __str__(self):
-        return self.username
