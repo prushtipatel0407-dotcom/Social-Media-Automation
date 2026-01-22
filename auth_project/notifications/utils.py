@@ -6,6 +6,16 @@ RATE_LIMIT_TTL = 60 # 1 minute
 from django.core.mail import send_mail
 from django.conf import settings
 
+def verify_reset_token(token, delete=False):
+    email = cache.get(f"reset:{token}")
+    if not email:
+        return None
+
+    if delete:
+        cache.delete(f"reset:{token}")
+
+    return email
+
 def send_reset_email(user, token):
     reset_link = (
         "http://127.0.0.1:8000"

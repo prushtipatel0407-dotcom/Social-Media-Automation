@@ -46,10 +46,16 @@ def create_reset_token(email):
     cache.set(f"reset:{token}", email, timeout=RESET_TTL)
     return token
 
-def verify_reset_token(token):
+
+def verify_reset_token(token, delete=False):
     email = cache.get(f"reset:{token}")
-    if email:
+
+    if not email:
+        return None
+
+    if delete:
         cache.delete(f"reset:{token}")
+
     return email
 
 def send_email(subject, message, recipients):

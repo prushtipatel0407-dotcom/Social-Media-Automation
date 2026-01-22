@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Login</title>
+
+  <!-- Google Sign-In SDK -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+
+<h2>Login</h2>
+
+<!-- Google Button -->
+<div id="g_id_onload"
+     data-client_id="737009173633-4rto236h3r80n7mc4remdm14nu8s3hef.apps.googleusercontent.com"
+     data-callback="handleGoogleLogin">
+</div>
+
+<div class="g_id_signin"
+     data-type="standard"
+     data-size="large">
+</div>
+
+<script>
+  function handleGoogleLogin(response) {
+    console.log("Google ID Token:", response.credential);
+
+    fetch("http://127.0.0.1:8000/api/auth/google-login/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        token: response.credential
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      console.log("Backend response:", data);
+
+      if (data.access) {
+        localStorage.setItem("access", data.access);
+        localStorage.setItem("refresh", data.refresh);
+        alert("Google login successful");
+      } else {
+        alert(data.message || "Login failed");
+      }
+    })
+    .catch(err => console.error(err));
+  }
+</script>
+
+</body>
+</html>

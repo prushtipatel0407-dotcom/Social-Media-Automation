@@ -1,57 +1,53 @@
-document.getElementById("resetForm").addEventListener("submit", async function (e) {
+const form = document.getElementById("resetForm");
+const message = document.getElementById("message");
+
+const params = new URLSearchParams(window.location.search);
+const token = params.get("token");
+
+form.addEventListener("submit", async (e) => {
   e.preventDefault();
 
   const password = document.getElementById("password").value;
-  const confirm = document.getElementById("confirmPassword").value;
-  const messageEl = document.getElementById("message");
+  const confirmPassword = document.getElementById("confirmPassword").value;
 
-  messageEl.textContent = "";
-
-  if (password !== confirm) {
-    messageEl.textContent = "Passwords do not match";
-    messageEl.style.color = "red";
+  if (!token) {
+    message.style.color = "red";
+    message.textContent = "Invalid or missing token";
     return;
   }
 
-  const params = new URLSearchParams(window.location.search);
-  const token = params.get("token");
-
-  if (!token) {
-    messageEl.textContent = "Invalid or missing reset token";
-    messageEl.style.color = "red";
+  if (password !== confirmPassword) {
+    message.style.color = "red";
+    message.textContent = "Passwords do not match";
     return;
   }
 
   try {
-    const response = await fetch("/api/auth/reset-password/", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        token: token,
-        new_password: password,
-      }),
-    });
+    const response = await fetch(
+      "http://127.0.0.1:8000/api/auth/reset-password/", 
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          token: token,
+          new_password: password, // ✅ REQUIRED BY BACKEND
+        }),
+      }
+    );
 
     const data = await response.json();
 
     if (!response.ok) {
-      messageEl.textContent = data.message || "Password reset failed";
-      messageEl.style.color = "red";
-      return;
+      message.style.color = "red";
+      message.textContent = data.message || "Reset failed";
+    } else {
+      message.style.color = "green";
+      message.textContent = "Password reset successful 🎉";
     }
-
-    messageEl.textContent = "✅ Password reset successful!";
-    messageEl.style.color = "green";
-
-    setTimeout(() => {
-      window.location.href = "/login.html"; // optional
-    }, 2000);
-
-  } catch (error) {
-    messageEl.textContent = "Server error. Try again.";
-    messageEl.style.color = "red";
-    console.error(error);
+  } catch (err) {
+    message.style.color = "red";
+    message.textContent = "Server error. Try again.";
   }
 });

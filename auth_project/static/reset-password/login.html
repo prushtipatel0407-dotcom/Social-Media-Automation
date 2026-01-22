@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Register</title>
+</head>
+<body>
+<h2>Register</h2>
+<form id="register-form">
+    <input type="text" id="username" placeholder="Username" required><br><br>
+    <input type="email" id="email" placeholder="Email" required><br><br>
+
+    <label>Country:</label>
+    <select id="country-select">
+        <option value="IN" data-code="+91">India</option>
+        <option value="US" data-code="+1">USA</option>
+        <option value="GB" data-code="+44">UK</option>
+    </select><br><br>
+
+    <input type="text" id="phone-number" placeholder="Phone number" required><br><br>
+    <input type="password" id="password" placeholder="Password" required><br><br>
+    <input type="password" id="confirm-password" placeholder="Confirm Password" required><br><br>
+    <button type="submit">Register</button>
+</form>
+
+<script>
+const countrySelect = document.getElementById("country-select");
+const phoneInput = document.getElementById("phone-number");
+
+// Prepend country code automatically
+countrySelect.addEventListener("change", () => {
+    const code = countrySelect.selectedOptions[0].dataset.code;
+    if (!phoneInput.value.startsWith(code)) {
+        phoneInput.value = code;
+    }
+});
+
+document.getElementById("register-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const data = {
+        username: document.getElementById("username").value,
+        email: document.getElementById("email").value,
+        country_code: document.getElementById("country-select").value,
+        phone_number: document.getElementById("phone-number").value,
+        password: document.getElementById("password").value,
+        confirm_password: document.getElementById("confirm-password").value
+    };
+
+    const response = await fetch("/register/", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(data)
+    });
+
+    const result = await response.json();
+    console.log(result);
+    alert("Registration Complete! Check console for output.");
+});
+</script>
+</body>
+</html>
