@@ -9,6 +9,8 @@ from django.conf import settings
 from .utils import can_request_reset, send_email
 from django.contrib.auth.password_validation import validate_password
 from .serializers import RegisterSerializer, LoginSerializer
+from django.utils import timezone
+
 from .utils import (
     generate_otp,
     store_otp,

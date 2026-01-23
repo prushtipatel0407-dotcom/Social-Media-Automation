@@ -12,7 +12,7 @@
 
 <!-- Google Button -->
 <div id="g_id_onload"
-     data-client_id="737009173633-4rto236h3r80n7mc4remdm14nu8s3hef.apps.googleusercontent.com"
+     data-client_id="737009173633-opsi4hd56s7k0mckgv7dhv6jmmkaiiti.apps.googleusercontent.com"
      data-callback="handleGoogleLogin">
 </div>
 
@@ -25,7 +25,7 @@
   function handleGoogleLogin(response) {
     console.log("Google ID Token:", response.credential);
 
-    fetch("http://127.0.0.1:8000/api/auth/google-login/", {
+    fetch("http://127.0.0.1:8000/api/auth/google/", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"

@@ -1,13 +1,14 @@
+from django.utils import timezone
+from datetime import timedelta
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 import re
 import phonenumbers
-
+import pycountry
+from django.contrib.auth import get_user_model
 
 User = get_user_model()
-import pycountry
-from .models import User
 
 # ---------------------------
 # Login Serializer
@@ -43,12 +44,13 @@ class RegisterSerializer(serializers.ModelSerializer):
     confirm_password = serializers.CharField(write_only=True, min_length=8)
     phone_number = serializers.CharField(min_length=6, max_length=16)
     country_code = serializers.CharField(write_only=True)  # from frontend
+    terms_accepted = serializers.BooleanField(write_only=True)
 
     class Meta:
         model = User
         fields = [
             "username", "email", "phone_number", 
-            "password", "confirm_password", "country_code"
+            "password", "confirm_password", "country_code","terms_accepted",
         ]
 
     def validate_email(self, value):
@@ -90,10 +92,17 @@ class RegisterSerializer(serializers.ModelSerializer):
     def validate(self, data):
         if data["password"] != data["confirm_password"]:
             raise serializers.ValidationError({"password": "Passwords do not match"})
+          # ✅ Terms check
+        if not data.get("terms_accepted"):
+         raise serializers.ValidationError({
+            "terms_accepted": "You must accept Terms & Conditions"
+        })
+
         return data
 
     def create(self, validated_data):
         validated_data.pop("confirm_password")
+        terms_accepted = validated_data.pop("terms_accepted")
         
         iso_code = validated_data.pop("country_code", None)
         country_name = None
@@ -109,5 +118,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             country_code=iso_code,
             country_name=country_name,
             is_verified=False,
+            terms_accepted=terms_accepted,
+            terms_accepted_at=timezone.now(),
         )
         return user
