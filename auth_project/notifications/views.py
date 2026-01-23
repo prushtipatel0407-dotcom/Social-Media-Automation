@@ -19,9 +19,8 @@ from .serializers import (
 User = get_user_model()
 
 # ---------------------------
-# ✅ Send Multiple Email API View
+# Send Multiple Email API View
 # ---------------------------
-
 class SendMultipleEmailAPIView(APIView):
     permission_classes = [AllowAny]
 
@@ -39,6 +38,10 @@ class SendMultipleEmailAPIView(APIView):
 
         return Response({"message": "Emails sent successfully"})
 
+
+# ---------------------------
+# Send OTP API View
+# ---------------------------
 
 class SendOTPAPIView(APIView):
     permission_classes = [AllowAny]
@@ -79,7 +82,9 @@ class SendOTPAPIView(APIView):
         })
 
 
-
+# ---------------------------
+# Verify Multiple OTPs API View
+# --------------------------
 class VerifyMultipleOTPAPIView(APIView):
     permission_classes = [AllowAny]
 

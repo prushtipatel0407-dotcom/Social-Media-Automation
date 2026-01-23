@@ -33,17 +33,15 @@ class LoginSerializer(serializers.Serializer):
         return attrs
 
 
-#import phonenumbers
+
 # ---------------------------
 # Register Serializer
 # ---------------------------
-
-
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=8)
     confirm_password = serializers.CharField(write_only=True, min_length=8)
     phone_number = serializers.CharField(min_length=6, max_length=16)
-    country_code = serializers.CharField(write_only=True)  # from frontend
+    country_code = serializers.CharField(write_only=True)  
     terms_accepted = serializers.BooleanField(write_only=True)
 
     class Meta:
@@ -92,7 +90,7 @@ class RegisterSerializer(serializers.ModelSerializer):
     def validate(self, data):
         if data["password"] != data["confirm_password"]:
             raise serializers.ValidationError({"password": "Passwords do not match"})
-          # ✅ Terms check
+          #  Terms check
         if not data.get("terms_accepted"):
          raise serializers.ValidationError({
             "terms_accepted": "You must accept Terms & Conditions"

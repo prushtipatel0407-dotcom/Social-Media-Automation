@@ -8,6 +8,7 @@ urlpatterns = [
     path('api/notifications/', include('notifications.urls')),
     # project urls.py
     path('api/', include('notifications.urls')),
+     path("api/business/", include("business.urls")),
 ]
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATICFILES_DIRS[0])

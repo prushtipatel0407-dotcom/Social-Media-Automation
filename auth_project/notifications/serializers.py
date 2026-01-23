@@ -1,5 +1,9 @@
 from rest_framework import serializers
 
+
+# ---------------------------
+# Send MULTIPLE Emails
+# ---------------------------
 class SendMultipleEmailSerializer(serializers.Serializer):
     emails = serializers.ListField(
         child=serializers.EmailField(),
@@ -16,13 +20,15 @@ class SendOTPSerializer(serializers.Serializer):
         min_length=1
     )
 
-
+# ---------------------------
+#  Verify OTP
+# ---------------------------
 class VerifyOTPSerializer(serializers.Serializer):
     email = serializers.EmailField()
     otp = serializers.CharField(max_length=6)
 
- # ---------------------------
-# ✅ Verify MULTIPLE OTPs
+# ---------------------------
+#  Verify MULTIPLE OTPs
 # ---------------------------
 class VerifyMultipleOTPSerializer(serializers.Serializer):
     otps = serializers.ListField(

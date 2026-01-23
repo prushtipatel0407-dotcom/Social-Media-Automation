@@ -9,7 +9,7 @@ from django.conf import settings
 from .utils import can_request_reset, send_email
 from django.contrib.auth.password_validation import validate_password
 from .serializers import RegisterSerializer, LoginSerializer
-from django.utils import timezone
+
 
 from .utils import (
     generate_otp,
@@ -178,7 +178,7 @@ class ResetPasswordAPIView(APIView):
             user.set_password(new_password)
             user.save()
 
-            # ✅ DELETE TOKEN AFTER SUCCESS
+            # DELETE TOKEN AFTER SUCCESS
             verify_reset_token(token, delete=True)
 
             return Response(
@@ -193,7 +193,7 @@ class ResetPasswordAPIView(APIView):
             )
 
         except Exception as e:
-            # 🔴 THIS IS WHAT CAUSED "Server error"
+            #  THIS IS WHAT CAUSED "Server error"
             return Response(
                 {"message": str(e)},
                 status=400
